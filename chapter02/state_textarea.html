@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>hello React</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <div id="app">
+      <!-- ここのコンテンツがReactアプリが生成したコンテンツに置き換わる-->
+    </div>
+    <script src="../react/build/react.js"></script>
+    <script src="../react/build/react-dom.js"></script>
+    <script>
+      var TextAreaCounter = React.createClass({
+        propTypes: {
+          text: React.PropTypes.string,
+        },
+
+        getDefaultProps: function() {
+          return {
+            text: ' ',
+          };
+        },
+
+        getInitialState: function() { // 常に正しいデータが取得できるようにgetInitialStateメソッドを定義
+          return {
+            text: this.props.text,
+          };
+        },
+
+        _textChange: function(ev) { //_textChangeはイベントリスナー。evという値でイベントのオブジェクトを受け取ることで、テキストエリアに入力された文字を取り出す。
+          this.setState({ //ステートの更新にthis.setStateを使う。
+            text: ev.target.value,
+          })
+        },
+
+
+        render: function() {
+          return React.DOM.div(null,
+            React.DOM.textarea({
+              //defaultValue: this.props.text,
+              value: this.state.text,
+              onChange: this._textChange,
+            }),
+            React.DOM.h3 (null, this.state.text.length)
+          );
+        }
+      });
+      ReactDOM.render(
+        React.createElement(TextAreaCounter, {
+          text: "パン",
+        }),
+        document.getElementById("app")
+      );
+    </script>
+  </body>
+</html>
