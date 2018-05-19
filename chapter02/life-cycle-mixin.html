@@ -24,9 +24,7 @@
           this._log('componentWillUpdate', arguments);
         },
         componentDidUpdate: function() {
-          if (this.state.text.length > 3) { //テキスト入力値が3文字を超えた場合
-            this.replaceState(oldState); // ステートを元に戻す
-          }
+          this._log('componentDidUpdate', arguments);
         },
         componentWillMount: function() {
           this._log('componentWillMount', arguments);
