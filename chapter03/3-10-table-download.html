@@ -149,6 +149,7 @@
               onClick: this._toggleSearch,
             },
             '検索'),
+            //HTML5の機能を使い、aタグを使ったリンクをクリックすると、ダウンロードが始まるようにする
             React.DOM.a({
               onClick: this._download.bind(this, 'json'),
               href: 'data.json'
