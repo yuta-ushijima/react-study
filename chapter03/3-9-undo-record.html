@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Table</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="table.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- my app renders here -->
+  </div>
+  <script src="../react/build/react.js"></script>
+  <script src="../react/build/react-dom.js"></script>
+  <script>
+    const Excel = React.createClass({
+      displayName: 'Excel',
+
+      propTypes: {
+        // headerにarrayOfを使って配列に含まれる要素の値をstringに指定
+        headers: React.PropTypes.arrayOf(
+          React.PropTypes.string
+        ),
+        // DataにarrayOfを使って配列に含まれる要素の値をstringに指定
+        initialData: React.PropTypes.arrayOf(
+          React.PropTypes.arrayOf(
+            React.PropTypes.string
+          )
+        ),
+      },
+
+      _log: [],
+
+      _logSetState: function(newState) {
+        //ステートのクローンを作成して記録する
+        this._log.push(JSON.parse(JSON.stringify(
+          this._log.length === 0 ? this.state : newState
+        )));
+        this.setState(newState);
+      },
+
+      _replay: function() {
+        if (this._log.length === 0) {
+          console.warn('ステートが記録されていません');
+          return;
+        }
+        let idx =  -1;
+        const interval = setInterval(function () {
+          idx++;
+          if (idx === this._log.length - 1) { //末尾に到達しました
+            clearInterval(interval);
+          }
+          this.setState(this._log[idx]);
+        }.bind(this), 1000);
+      },
+
+      componentDidMount: function() {
+        document.onkeydown = function(e) {
+          //Altまたはoption + Shift + R RはReplyの意味
+          if (e.altKey && e.shiftKey && e.keyCode === 82) {
+            this._replay();
+          }
+        }.bind(this);
+      },
+
+
+
+
+      //元のデータを失わないように、検索の前にデータを_preSearchDataとしてコピー
+      //このコピーにより、表全体を再表示させたり別の検索条件を指定したい場合にも対応できる。
+      _preSearchData: null,
+
+      _toggleSearch: function() {
+        //検索機能が有効化される時は、現時点のデータを記憶
+        if(this.state.search) {
+          this._logSetState({
+            data: this._preSearchData,
+            search: false,
+          });
+          this._preSearchData = null;
+          //検索機能が無効化される時は、データを記憶していたものに戻す
+        }else {
+          this._preSearchData = this.state.data;
+          this._logSetState({
+            search: true,
+          });
+        }
+      },
+
+      _search: function(e) {
+        //イベントのターゲットは入力フィールドなので、以下のようにして検索文字列を取り出す。
+        const needle = e.target.value.toLowerCase();
+        // 入力した文字が何らかの理由でからになった場合、記憶されてリウ元のdataを新しいステートとしてセット
+        if (!needle) {//検索文字列は削除されました
+          this._logSetState({data: this._preSearchData});
+          return;
+        }
+
+        let idx = e.target.dataset.idx; //検索対象の列を表します
+        // 検索文字列が入力されている場合は、元のdataに対してフィルタリングを行い、その結果を新しいステートにセットする
+        let searchdata = this._preSearchData.filter(function(row) {
+          return row[idx].toString().toLowerCase().indexOf(needle) > -1;
+        });
+        this._logSetState({data: searchdata});
+      },
+
+
+
+      //Excelコンポーネントを呼び出すため、データを渡して表を初期化する。
+      getInitialState: function() {
+        return {
+          data: this.props.initialData,
+          sortby: null,
+          descending: false,
+          edit: null, //editを初期化する。形式:{row: 行番号, cell: 列番号}
+          search: false, //検索機能のオンオフ管理のためthis.stateオブジェクトに、searchプロパティを追加
+        };
+      },
+
+      _sort: function(e) {//sort関数を定義
+
+        //表のヘッダーであるth要素のcellIndexプロパティから、並べ替えの基準となる列を判別する。
+        const column = e.target.cellIndex;
+
+        //並べ替えのためにdataをコピーした配列を用意し、sort()メソッドを使って直接並べ替える。これにより、配列の内容であるthis.stateが変更される。
+        // const data = this.state.data.slice();
+        //ES6では、新しいArrayインスタンスを作る以下の書き方でもOK。
+        // 引数には配列の変換対象となるdataオブジェクトが入っている
+        const data = Array.from(this.state.data)
+
+        // this.state.sortby...並び替えの基準として使われている列のインデックス
+        //this.state.descending... 昇順か降順かを表す真偽値
+        //新しい基準の列が現在の列と同じで、かつすでに昇順で並べ替えされている場合を除いて、デフォルトの並び替え方向が昇順になるようdecendingを定義
+        const descending = this.state.sortby === column && !this.state.descending;
+
+
+        // sortメソッドに渡したコールバック関数の中で並び替えを行う
+        data.sort(function(a,b) {
+          //全体が昇順降順実装のため、三項演算子になるようにする。
+          return descending
+          // 三項演算子を使って、aよりbが成立すれば昇順に並ぶ
+          ? (a[column] > b[column] ? 1 : -1)
+          // 上記の逆を定義することで降順に並ぶよう三項演算子を使う
+          :  (a[column] < b[column] ? 1 : -1);
+        });
+        this._logSetState({
+          //それぞれを定義してステートの変更を行う
+          data: data,
+          sortby: column,
+          descending: descending,
+        });
+      },
+
+      _showEditor: function(e) {
+        //this._logSetStateにより、this.stateにeditのプロパティを追加
+        // 編集が行われていない間は、editプロパティはnull
+        this._logSetState({edit: {
+          // editにはrowとcellの二つのプロパティが含まれている
+          // 編集対象のセルの行番号と列番号がセットされている
+          // (先頭行の先頭はrow: 0, cell: 0)となる
+          // 列番号の取得はe.target.cellIndexを使う
+          // (e.targetはダブルクリックされたtd要素を表す)
+          // e.target.dataset.rowプロパティの中に、行番号の情報を表すdata-row属性がセットされている
+          // parseInt()メソッドを使うと行番号を整数として取り出せる
+          row: parseInt(e.target.dataset.row, 10),
+          cell: e.target.cellIndex,
+        }});
+      },
+
+      _save: function(e) {
+        e.preventDefault();
+        //ページの再読み込みが発生しないように、デフォルトの送信の処理を無効化
+        // その後、入力フィールドへの参照を取得
+        const input = e.target.firstChild;
+        //this.stateを直接変更しないようにdataのクローンを作成
+        const data = this.state.data.slice();
+        //入力フィールドの値を使って、対象セルの値を更新
+        // セルの位置は、ステートに含まれるeditプロパティで指定している
+        data[this.state.edit.row][this.state.edit.cell] = input.value;
+
+        this._logSetState({
+          edit: null, //編集終了
+          data: data,
+        });
+      },
+
+      //以下のrender関数はコンテナとなるdivを返す。
+      // このdivコンテナにはツールバーと表が含まれている
+      render: function() {
+        return (
+          React.DOM.div(null,
+          this._renderToolbar(),
+          this._renderTable()
+        )
+      );
+    },
+      //検索ボタンはツールバーの一部になるので_renderToolbar()関数という関数の中で描画することにする。
+      _renderToolbar: function() {
+        return React.DOM.button(
+          {
+            onClick: this._toggleSearch,
+            className: 'toolbar',
+          },
+          '検索する'
+        );
+      },
+
+      _renderSearch: function() {
+        // 呼び出し元である_renderTable()がステートの判定を行い、オンの場合だけ
+        // _renderSearchが呼び出される実装も考えられるが、以下のように処理すれば_renderTable関数をシンプルにできる
+        if (!this.state.search) {
+          // 検索機能がオフの状態の時は何も描画するものがないのでnullを返す
+          return null;
+        }
+        return (
+          React.DOM.tr({onChange: this._search},
+            this.props.headers.map(function(_ignore, idx){
+              return React.DOM.td({key: idx},
+                React.DOM.input({
+                  type: 'text',
+                  'data-idx': idx,
+                })
+              );
+            })
+          )
+        );
+      },
+
+
+      //表の描画をだけを扱っているため、3-7なでrenderだった関数を_renderTable()関数に名前を変更
+      _renderTable: function() {
+        return (
+          React.DOM.table(null,
+            React.DOM.thead({onClick: this._sort},
+              React.DOM.tr(null,
+                this.props.headers.map(function(title, idx) {
+                  // if文で並び替えの基準として使われている列のインデックスが、
+                  // コールバック関数の添え字の値と同じだった場合に処理を実行させる
+                  if (this.state.sortby === idx) {
+                    // 並び替えの基準となっている列のヘッダーに矢印をユニコードで表示させる(三項演算子で)
+                    title += this.state.descending ? '\u2191' : '\u2193'
+                  }
+                  return React.DOM.th({key: idx}, title);
+                }, this)
+              )
+            ),
+            React.DOM.tbody({onDoubleClick: this._showEditor},
+              // 検索条件の入力フィールドは表の先頭行として描画される
+              // この検索条件の入力フィールドい続いて、表自体を表すdataについてのループが実行される
+              // _renderSearchがnullを返したら今まで通り表のデータだけが描画される
+            this._renderSearch(),
+            this.state.data.map(function(row, rowidx) {
+              return (
+                React.DOM.tr({key: rowidx},//{key: idx}を呼び出して、配列の中で重複のないキーの値を割り当てる
+                row.map(function(cell, idx) {
+                  let content = cell;
+                  //editのstateを取り出す
+                  const edit = this.state.edit;
+                  //値がセットされている場合には、行番号と列番号が現在描画しているものと一致するかを確認。
+                  // 一致した場合はフォームと入力フィールドを生成する。
+                  // 入力フィールドにはセルのコンテンツの文字列をデフォルトでセット
+                    if (edit && edit.row === rowidx && edit.cell === idx) {
+                      //フォームの送信の操作が行われると、_save()メソッドが呼び出される
+                      content = React.DOM.form({onSubmit: this._save},
+                        React.DOM.input({
+                          type: 'text',
+                          defaultValue: content,
+                        })
+                      );
+                    }
+
+
+                  return React.DOM.td({
+                    key: idx,
+                    'data-row': rowidx
+                  }, content);
+                  //{key: idx}を呼び出して、配列の中で重複のないキーの値を割り当てる
+                }, this)
+               )
+              );
+            }, this)
+           )
+          )
+         );
+        }
+      });
+
+    const headers = [
+      "タイトル", "著者", "言語", "出版年", "売上部数"
+    ];
+    // dataは二次元配列なので、それぞれの行の各セルに対して処理を行うループと、それを行ごとに繰り返すループをmapメソッドを使って実装する
+    const data = [
+      ["The Lord of the Rings", "J. R. R. Tolkien", "English", "1954–1955", "150 million"],
+      ["Le Petit Prince (The Little Prince)", "Antoine de Saint-Exupéry", "French", "1943", "140 million"],
+      ["Harry Potter and the Philosopher's Stone", "J. K. Rowling", "English", "1997", "107 million"],
+      ["And Then There Were None", "Agatha Christie", "English", "1939", "100 million"],
+      ["Dream of the Red Chamber", "Cao Xueqin", "Chinese", "1754–1791", "100 million"],
+      ["The Hobbit", "J. R. R. Tolkien", "English", "1937", "100 million"],
+      ["She: A History of Adventure", "H. Rider Haggard", "English", "1887", "100 million"],
+    ];
+
+    ReactDOM.render(
+      React.createElement(Excel, {
+        headers: headers,
+        initialData: data,
+      }),
+      document.getElementById("app")
+    );
+  </script>
+</body>
+
+</html>
