@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>hello React</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <div id="app">
+      <!-- ここのコンテンツがReactアプリが生成したコンテンツに置き換わる-->
+    </div>
+    <script src="../react/build/react.js"></script>
+    <script src="../react/build/react-dom.js"></script>
+    <!-- トランスパイラーをインクルード -->
+    <script src="../babel/browser.js"></script>
+    <!--  type="text/babel"のように指定することで、トランスパイルが実行でき、babelを介してJSXをブラウザが理解する-->
+    <script type="text/babel">
+      const Example = React.createClass({
+        /*renderメソッドでノードの配列は返せないが、配列を元にノードを組み立てて返すことは可能*/
+        /*ただし、配列内の各ノードにkey属性が指定されている必要がある*/
+        render: function(){
+          console.log(this.props.children.length);
+          return(
+            <div>
+              {this.props.children}
+            </div>
+          );
+          /*return (
+            const greeting = [
+              <span key="greet">Hello</span>,
+              ' ',
+              <span key="world">World</span>,
+              '!'
+            ];
+            return (
+              <div>
+                {greeting}
+              </div>
+            )*/
+            /*以下は構文エラーになる。隣接するJSXの要素は別タグで囲む必要がある*/
+          /*  <span>
+              Hello
+            </span>
+            <span>
+              World
+            </span>*/
+            /*以下のようにdivタグでラップすればOK。*/
+            /*<div>
+              <span>
+                Hello
+              </span>
+              <span>
+                World
+              </span>
+            </div>
+          );*/
+        }
+      });
+      ReactDOM.render(
+        <Example>
+          <span key="greet">Hello</span>
+          {' '}
+          <span key="world">World</span>
+          !
+        </Example>,
+        document.getElementById("app")
+      );
+    </script>
+  </body>
+</html>
