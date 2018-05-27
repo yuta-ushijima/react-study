@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>hello React</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <div id="app">
+      <!-- ここのコンテンツがReactアプリが生成したコンテンツに置き換わる-->
+    </div>
+    <script src="../react/build/react.js"></script>
+    <script src="../react/build/react-dom.js"></script>
+    <!-- トランスパイラーをインクルード -->
+    <script src="../babel/browser.js"></script>
+    <!--  type="text/babel"のように指定することで、トランスパイルが実行でき、babelを介してJSXをブラウザが理解する-->
+    <script type="text/babel">
+      ReactDOM.render(
+        // <h1>
+        //   {1} plus {2} is    {3}
+        // </h1>,
+        // <h1>
+        //  {1}
+        //  {' '}plus{' '}
+        //  {2}
+        //  {' '}is{' '}
+        //  {3}
+        // </h1>,
+        <h1>
+        {/* コメント*/}
+         {1}
+         {' plus '}
+         {2}
+         {' is '}
+         {3}
+        </h1>,
+        document.getElementById("app")
+      );
+    </script>
+  </body>
+</html>
