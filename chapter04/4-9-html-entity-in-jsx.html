@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>hello React</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <div id="app">
+      <!-- ここのコンテンツがReactアプリが生成したコンテンツに置き換わる-->
+    </div>
+    <script src="../react/build/react.js"></script>
+    <script src="../react/build/react-dom.js"></script>
+    <!-- トランスパイラーをインクルード -->
+    <script src="../babel/browser.js"></script>
+    <!--  type="text/babel"のように指定することで、トランスパイルが実行でき、babelを介してJSXをブラウザが理解する-->
+    <script type="text/babel">
+      /*何回も繰り返し使う場合は、コードの先頭で定数として定義しておく*/
+      /*constを使えているのはBabelによるトランスパイルのおかげ*/
+      const RAQUO = ' \u00bb';
+      /*以下のような文字列がセットされているとする*/
+      let firstname = 'ジョン<scr' + 'ipt src = "http://evil/co.jp"></scr' + 'ipt>';
+      /*document.write(firstname);*/
+      ReactDOM.render(
+        <h2>
+          {/* 以下の場合は通常通りエンティティが表示される*/}
+          {/*詳しくはこちら &raquo;*/}
+          {/*でも以下の場合はエンコードされてしまう*/}
+          {/*"詳しくはこちら &raquo;"*/}
+          {/*HTMLのエンコードを防ぐには、エンティティの代わりにUnicodeを使う*/}
+          {/*"詳しくはこちら \u00bb"*/}
+          {/*必要な箇所で定数を参照する*/}
+          {/*"詳しくはこちら" + RAQUO*/}
+          {/*以下の書き方でもいい*/}
+          {/*{"詳しくはこちら"}{RAQUO}*/}
+          {/*firstnameにスクリプトが埋め込まれていたとしても、エスケープされる*/}
+          こんにちは、{firstname}!
+        </h2>,
+        document.getElementById("app")
+      );
+    </script>
+  </body>
+</html>
